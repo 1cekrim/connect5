@@ -1,8 +1,21 @@
-from flask import Flask, request, current_app, session, escape
 import os
+
+from functools import wraps, reduce
+from flask import Flask, request, current_app, session, escape
 
 app = Flask(__name__)
 admin_password = 'rla92233'
+
+
+def check_login(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not 'player_name' in session:
+            return 'Please login first'
+        if not session['player_name'] in current_app.players:
+            return 'Session has expired.'
+        return func(*args, **kwargs)
+    return wrapper
 
 
 @app.route('/login', methods=['POST'])
@@ -19,9 +32,8 @@ def login():
 
 
 @app.route('/logout', methods=['POST'])
+@check_login
 def logout():
-    if not 'player_name' in session:
-        return f'Please login first.'
     player_name = session['player_name']
     session.pop('player_name', None)
     if not player_name in current_app.players:
@@ -30,7 +42,7 @@ def logout():
     return f'Good bye. {player_name}'
 
 
-@app.route('/remove_player', methods=['post'])
+@app.route('/remove_player', methods=['POST'])
 def remove_player():
     if request.form['admin_password'] != admin_password:
         return 'Access denied.'
@@ -39,6 +51,11 @@ def remove_player():
         return f'{player_name} does not exist.'
     del current_app.players[player_name]
     return 'Success.'
+
+
+@app.route('/player', methods=['GET'])
+def player():
+    return reduce(lambda a, b: a + ' ' + b, current_app.players.keys(), '')
 
 
 def init_app():
