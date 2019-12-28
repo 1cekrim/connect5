@@ -1,0 +1,14 @@
+{
+    "code-runner.executorMap": {
+        "python": "python",
+    },
+    "code-runner.runInTerminal": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.mypyEnabled": false,
+    "python.linting.pycodestyleEnabled": false,
+    "python.linting.flake8Enabled": false,
+}
