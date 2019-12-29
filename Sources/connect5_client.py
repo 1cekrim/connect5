@@ -1,4 +1,6 @@
 import requests
+import connect5_viewer
+
 from functools import wraps
 
 host = 'http://127.0.0.1:12345/'
@@ -7,8 +9,12 @@ ADMIN_PASSWORD = 'rla92233'
 command_functions = {}
 
 
+def is_success(rep):
+    return rep.status_code // 100 == 2
+
+
 def print_response(rep):
-    if rep.status_code // 100 == 2:
+    if is_success(rep):
         valid = '[Success] '
     else:
         valid = '[Error] '
@@ -121,6 +127,51 @@ def find_history(command):
         form['admin_password'] = ADMIN_PASSWORD
         form['game_name'] = command[0]
         print_response(requests.post(host + 'find_history', form))
+
+
+@command_func
+def connect(command):
+    if len(command) != 1:
+        print('connect [match name]')
+
+    form = {}
+    form['admin_password'] = ADMIN_PASSWORD
+    form['game_name'] = command[0]
+
+    match_rep = requests.get(host + 'match')
+    if not is_success(match_rep):
+        print('Invalid?')
+
+    matches = match_rep.json()
+
+    if command[0] not in matches:
+        print('Invalid match.')
+        print(matches)
+        return
+
+    current_match = matches[command[0]]
+
+    if current_match['column_size'] != current_match['row_size']:
+        print('column_size not equal row_size.')
+
+    size = int(current_match['column_size'])
+
+    print('[Info] Success.')
+    print(f"Game name: {current_match['game_name']}")
+    print(f"Black: {current_match['black_player_name']}")
+    print(f"White: {current_match['white_player_name']}")
+
+    viewer = connect5_viewer.Connect5Viewer(
+        current_match['game_name'], size, 10, 5)
+
+    def main_loop():
+        rep = requests.post(host + 'find_history', form)
+        if not is_success(rep):
+            print("Can't find history")
+            return
+        viewer.update_history(rep.json())
+
+    viewer.show(main_loop)
 
 
 while True:
