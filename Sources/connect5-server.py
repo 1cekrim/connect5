@@ -8,7 +8,7 @@ from flask import Flask, request, current_app, session, escape, jsonify
 
 app = Flask(__name__)
 ADMIN_PASSWORD = 'rla92233'
-GRID_SIZE = 5
+GRID_SIZE = 15
 
 
 class Player:
@@ -34,7 +34,7 @@ class Game:
         self.black_player = self.config['black']
         self.white_player = self.config['white']
         self.game_name = self.config['name']
-        self.current_player = current_app.players[self.black_player]
+        self.current_player = self.black_player
         self.grid = np.zeros((self.column_size, self.row_size), dtype='int64')
 
     def get_state(self, player_name: str):
@@ -47,16 +47,27 @@ class Game:
 
         return state
 
+    def serialize(self):
+        state = {}
+        state['column_size'] = self.column_size
+        state['row_size'] = self.row_size
+        state['black_player_name'] = self.black_player.player_name
+        state['white_player_name'] = self.white_player.player_name
+        state['game_name'] = self.game_name
+        state['current_player_name'] = self.current_player.player_name
+        state['grid'] = self.grid.tolist()
+
+        return state
+
     def do_action(self, player_name: str, pos_y: int, pos_x: int):
         self._check_turn(player_name)
         self._check_pos(player_name, pos_y, pos_x)
 
-        is_black = True if player_name == self.black_player else False
+        is_black = True if player_name == self.black_player.player_name else False
 
         self.grid[pos_y][pos_x] = 1 if is_black else 2
 
-        current_player_name = self.white_player if is_black else self.white_player
-        self.current_player = current_app.players[current_player_name]
+        self.current_player = self.white_player if is_black else self.white_player
 
     def _check_turn(self, player_name: str):
         if self.current_player.player_name != player_name:
@@ -178,8 +189,8 @@ def make_match():
         return 'Game is arleady started.', 409
 
     config = {}
-    config['black'] = black_name
-    config['white'] = white_name
+    config['black'] = black_player
+    config['white'] = white_player
     config['size'] = GRID_SIZE
     config['name'] = random_name(3, list(current_app.games.keys()))
     game = Game(config)
@@ -223,6 +234,15 @@ def action():
         return 'Not your turn.', 403
     else:
         return jsonify(result), 200
+
+
+@app.route('/match', methods=['GET'])
+@logger
+def match():
+    result = {}
+    for game in current_app.games.values():
+        result[game.game_name] = game.serialize()
+    return result
 
 
 def init_app():
