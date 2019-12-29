@@ -73,6 +73,29 @@ def state(command):
         print_response(sessions[command[0]].get(host + 'state'))
 
 
+@command_func
+def make_match(command):
+    if len(command) != 2:
+        print('make_match [black player] [white player]')
+    else:
+        form = {}
+        form['admin_password'] = ADMIN_PASSWORD
+        form['black'] = command[0]
+        form['white'] = command[1]
+        print_response(requests.post(host + 'make_match', form))
+
+
+@command_func
+def action(command):
+    if len(command) != 3:
+        print('action [session name] [x position] [y position]')
+    else:
+        form = {}
+        form['y'] = int(command[2])
+        form['x'] = int(command[1])
+        print_response(sessions[command[0]].post(host + 'action', form))
+
+
 while True:
     command = str(input())
     if command == 'exit':
