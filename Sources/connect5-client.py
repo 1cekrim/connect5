@@ -7,6 +7,14 @@ ADMIN_PASSWORD = 'rla92233'
 command_functions = {}
 
 
+def print_response(rep):
+    if rep.status_code // 100 == 2:
+        valid = '[Success] '
+    else:
+        valid = '[Error] '
+    print(valid + rep.text)
+
+
 def command_func(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -41,8 +49,8 @@ def login(command):
     elif command[0] not in sessions:
         print('[Error] Invalid session.')
     else:
-        print('[Result] ' + sessions[command[0]].post(host +
-                                                      'login', {'player_name': command[1]}).text)
+        print_response(sessions[command[0]].post(host +
+                                                 'login', {'player_name': command[1]}))
 
 
 @command_func
@@ -52,7 +60,17 @@ def logout(command):
     elif command[0] not in sessions:
         print('[Error] Invalid session.')
     else:
-        print('[Result] ' + sessions[command[0]].post(host + 'logout').text)
+        print_response(sessions[command[0]].post(host + 'logout'))
+
+
+@command_func
+def state(command):
+    if len(command) != 1:
+        print('state [session name]')
+    elif command[0] not in sessions:
+        print('[Error] Invalid session.')
+    else:
+        print_response(sessions[command[0]].get(host + 'state'))
 
 
 while True:
