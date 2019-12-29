@@ -23,22 +23,30 @@ class Connect5Viewer:
         self.origin_window_width = 500
         self.origin_window_height = 500
 
+        self.loop_flag = True
+
         self.history = []
 
+    def show(self, main_loop=None):
         glutInit()
 
         glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
         glutInitWindowSize(self.origin_window_width, self.origin_window_height)
-        glutCreateWindow(name)
+        glutCreateWindow(self.name)
         glClearColor(220 / 255, 179 / 255, 92 / 255, 1)
         glOrtho(-self.origin_ortho_width, self.origin_ortho_width, -
                 self.origin_ortho_height, self.origin_ortho_height, -1.0, 1.0)
         glutDisplayFunc(self.display)
         glutReshapeFunc(self.reshapce)
-        glutMainLoop()
+
+        while self.loop_flag:
+            glutMainLoopEvent()
+            if main_loop:
+                main_loop()
 
     def update_history(self, history: list):
         self.history = history
+        self.display()
 
     def reshapce(self, width, height):
         size = min(width, height)
@@ -67,9 +75,9 @@ class Connect5Viewer:
                 glEnd()
 
         for hist in self.history:
-            if hist['color'] is "black":
+            if hist['color'] == "black":
                 glColor3f(0, 0, 0)
-            elif hist['color'] is "white":
+            elif hist['color'] == "white":
                 glColor3f(1, 1, 1)
             else:
                 print('Invalid Color.')
@@ -88,4 +96,4 @@ class Connect5Viewer:
 
 
 if __name__ == '__main__':
-    Connect5Viewer('hello', 15, 10, 5)
+    Connect5Viewer('hello', 15, 10, 5).show()
