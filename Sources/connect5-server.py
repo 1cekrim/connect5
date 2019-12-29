@@ -14,6 +14,8 @@ GRID_SIZE = 5
 class Player:
     def __init__(self, player_name: str):
         self.player_name = player_name
+        self.valid_game = False
+        self.game = None
 
 
 class InvalidTurnException(Exception):
@@ -53,14 +55,15 @@ class Game:
 
         self.grid[pos_y][pos_x] = 1 if is_black else 2
 
-        self.current_player = self.white_player if is_black else self.white_player
+        current_player_name = self.white_player if is_black else self.white_player
+        self.current_player = current_app.players[current_player_name]
 
     def _check_turn(self, player_name: str):
         if self.current_player.player_name != player_name:
             raise InvalidTurnException
 
     def _check_pos(self, player_name: str, pos_y: int, pos_x: int):
-        if self.grid[pos_y][pos_x] != 0:
+        if self.grid[pos_y][pos_x] != 0 or pos_y < 0 or pos_x < 0 or pos_y >= self.column_size or pos_x >= self.row_size:
             raise InvalidActionException
 
 
@@ -99,7 +102,7 @@ def check_admin(func):
 def check_game_started(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not current_app.players[session['player_name']]:
+        if not current_app.players[session['player_name']].valid_game:
             return 'Game did not start.', 409
         return func(*args, **kwargs)
     return wrapper
@@ -164,25 +167,57 @@ def player():
 def make_match():
     if not ('black' in request.form and 'white' in request.form and request.form['black'] in current_app.players and request.form['white'] in current_app.players):
         return 'Invalid player.', 400
+
+    black_name = request.form['black']
+    white_name = request.form['white']
+
+    black_player = current_app.players[black_name]
+    white_player = current_app.players[white_name]
+
+    if black_player.valid_game or white_player.valid_game:
+        return 'Game is arleady started.', 409
+
     config = {}
-    config['black'] = request.form['black']
-    config['white'] = request.form['white']
+    config['black'] = black_name
+    config['white'] = white_name
     config['size'] = GRID_SIZE
     config['name'] = random_name(3, list(current_app.games.keys()))
     game = Game(config)
     current_app.games[config['name']] = game
-    current_app.players[config['black']].game = game
-    current_app.players[config['white']].game = game
+    black_player.game = game
+    white_player.game = game
+    black_player.valid_game = True
+    white_player.valid_game = True
     return f'Success. Game name: {config["name"]}'
 
 
 @app.route('/state', methods=['GET'])
 @check_login
+@check_game_started
 @logger
 def state():
     player = current_app.players[session['player_name']]
     try:
         result = player.game.get_state(player.player_name)
+    except InvalidTurnException:
+        return 'Not your turn.', 403
+    else:
+        return jsonify(result), 200
+
+
+@app.route('/action', methods=['POST'])
+@check_login
+@logger
+def action():
+    if 'y' not in request.form or 'x' not in request.form:
+        return 'Bad Request.', 400
+
+    player = current_app.players[session['player_name']]
+
+    try:
+        result = player.game.do_action(player.player_name, int(request.form['y']), int(request.form['x']))
+    except InvalidActionException:
+        return "Invalid Action", 409
     except InvalidTurnException:
         return 'Not your turn.', 403
     else:
