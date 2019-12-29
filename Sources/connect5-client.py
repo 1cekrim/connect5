@@ -104,6 +104,25 @@ def match(command):
         print_response(requests.get(host + 'match'))
 
 
+@command_func
+def history(command):
+    if len(command) != 1:
+        print('history [session name]')
+    else:
+        print_response(sessions[command[0]].get(host + 'history'))
+
+
+@command_func
+def find_history(command):
+    if len(command) != 1:
+        print('history [match name]')
+    else:
+        form = {}
+        form['admin_password'] = ADMIN_PASSWORD
+        form['game_name'] = command[0]
+        print_response(requests.post(host + 'find_history', form))
+
+
 while True:
     command = str(input())
     if command == 'exit':
