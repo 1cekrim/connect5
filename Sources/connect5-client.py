@@ -96,6 +96,14 @@ def action(command):
         print_response(sessions[command[0]].post(host + 'action', form))
 
 
+@command_func
+def match(command):
+    if len(command) != 0:
+        print('match')
+    else:
+        print_response(requests.get(host + 'match'))
+
+
 while True:
     command = str(input())
     if command == 'exit':
