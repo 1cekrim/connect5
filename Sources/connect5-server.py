@@ -32,12 +32,11 @@ class Game:
         self.black_player = self.config['black']
         self.white_player = self.config['white']
         self.game_name = self.config['name']
-        self.current_player = self.black_player
-        self.grid = np.zeros((self.column_size, self.row_size))
+        self.current_player = current_app.players[self.black_player]
+        self.grid = np.zeros((self.column_size, self.row_size), dtype='int64')
 
     def get_state(self, player_name: str):
-        if self.current_player.player_name != player_name:
-            raise InvalidTurnException
+        self._check_turn(player_name)
 
         state = {}
         state['column_size'] = self.column_size
@@ -46,6 +45,24 @@ class Game:
 
         return state
 
+    def do_action(self, player_name: str, pos_y: int, pos_x: int):
+        self._check_turn(player_name)
+        self._check_pos(player_name, pos_y, pos_x)
+
+        is_black = True if player_name == self.black_player else False
+
+        self.grid[pos_y][pos_x] = 1 if is_black else 2
+
+        self.current_player = self.white_player if is_black else self.white_player
+
+    def _check_turn(self, player_name: str):
+        if self.current_player.player_name != player_name:
+            raise InvalidTurnException
+
+    def _check_pos(self, player_name: str, pos_y: int, pos_x: int):
+        if self.grid[pos_y][pos_x] != 0:
+            raise InvalidActionException
+
 
 def random_name(length, lst):
     strs = string.ascii_letters + string.digits
@@ -53,7 +70,7 @@ def random_name(length, lst):
         result = ""
         for _ in range(length):
             result += random.choice(strs)
-        if lst and result not in lst:
+        if not lst or result not in lst:
             return result
 
 
@@ -85,10 +102,21 @@ def check_game_started(func):
         if not current_app.players[session['player_name']]:
             return 'Game did not start.', 409
         return func(*args, **kwargs)
-    return wrapper 
+    return wrapper
+
+
+def logger(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f'[{func.__name__} Start]')
+        result = func(*args, **kwargs)
+        print(f'[{func.__name__} End]')
+        return result
+    return wrapper
 
 
 @app.route('/login', methods=['POST'])
+@logger
 def login():
     if 'player_name' in session:
         return f'Please logout first. {escape(session["player_name"])}', 409
@@ -103,6 +131,7 @@ def login():
 
 @app.route('/logout', methods=['POST'])
 @check_login
+@logger
 def logout():
     player_name = session['player_name']
     session.pop('player_name', None)
@@ -114,6 +143,7 @@ def logout():
 
 @app.route('/remove_player', methods=['POST'])
 @check_admin
+@logger
 def remove_player():
     player_name = request.form['player_name']
     if not player_name in current_app.players:
@@ -123,12 +153,14 @@ def remove_player():
 
 
 @app.route('/player', methods=['GET'])
+@logger
 def player():
     return jsonify(list(current_app.players.keys())), 200
 
 
 @app.route('/make_match', methods=['POST'])
 @check_admin
+@logger
 def make_match():
     if not ('black' in request.form and 'white' in request.form and request.form['black'] in current_app.players and request.form['white'] in current_app.players):
         return 'Invalid player.', 400
@@ -141,10 +173,12 @@ def make_match():
     current_app.games[config['name']] = game
     current_app.players[config['black']].game = game
     current_app.players[config['white']].game = game
+    return f'Success. Game name: {config["name"]}'
 
 
 @app.route('/state', methods=['GET'])
 @check_login
+@logger
 def state():
     player = current_app.players[session['player_name']]
     try:
