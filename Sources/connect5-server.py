@@ -215,7 +215,8 @@ def action():
     player = current_app.players[session['player_name']]
 
     try:
-        result = player.game.do_action(player.player_name, int(request.form['y']), int(request.form['x']))
+        result = player.game.do_action(player.player_name, int(
+            request.form['y']), int(request.form['x']))
     except InvalidActionException:
         return "Invalid Action", 409
     except InvalidTurnException:
