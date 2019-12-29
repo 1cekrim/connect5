@@ -36,6 +36,7 @@ class Game:
         self.game_name = self.config['name']
         self.current_player = self.black_player
         self.grid = np.zeros((self.column_size, self.row_size), dtype='int64')
+        self.history = []
 
     def get_state(self, player_name: str):
         self._check_turn(player_name)
@@ -67,7 +68,13 @@ class Game:
 
         self.grid[pos_y][pos_x] = 1 if is_black else 2
 
+        self.history.append({'turns_since': len(self.history), 'player_name': player_name,
+                             'color': 'black' if is_black else 'white', 'x': pos_x, 'y': pos_y})
+
         self.current_player = self.white_player if is_black else self.white_player
+
+    def get_history(self):
+        return self.history
 
     def _check_turn(self, player_name: str):
         if self.current_player.player_name != player_name:
@@ -243,6 +250,27 @@ def match():
     for game in current_app.games.values():
         result[game.game_name] = game.serialize()
     return result
+
+
+@app.route('/find_history', methods=['POST'])
+@check_admin
+@logger
+def find_history():
+    if 'game_name' not in request.form:
+        return 'Bad Request.', 400
+
+    if request.form['game_name'] not in current_app.games:
+        return f"Can't find {request.form['game_name']}"
+
+    return jsonify(current_app.games[request.form['game_name']].get_history()), 200
+
+
+@app.route('/history', methods=['GET'])
+@check_login
+@check_game_started
+@logger
+def history():
+    return jsonify(current_app.players[session['player_name']].game.get_history()), 200
 
 
 def init_app():
