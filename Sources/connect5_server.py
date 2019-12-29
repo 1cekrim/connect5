@@ -71,7 +71,7 @@ class Game:
         self.history.append({'turns_since': len(self.history), 'player_name': player_name,
                              'color': 'black' if is_black else 'white', 'x': pos_x, 'y': pos_y})
 
-        self.current_player = self.white_player if is_black else self.white_player
+        self.current_player = self.white_player if is_black else self.black_player
 
     def get_history(self):
         return self.history
@@ -249,7 +249,7 @@ def match():
     result = {}
     for game in current_app.games.values():
         result[game.game_name] = game.serialize()
-    return result
+    return jsonify(result), 200
 
 
 @app.route('/find_history', methods=['POST'])
