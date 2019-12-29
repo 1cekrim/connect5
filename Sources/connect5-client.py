@@ -6,6 +6,7 @@ ADMIN_PASSWORD = 'rla92233'
 
 command_functions = {}
 
+
 def command_func(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -14,6 +15,7 @@ def command_func(func):
         print('[Command End]\n')
     command_functions[func.__name__] = wrapper
     return wrapper
+
 
 sessions = {}
 @command_func
@@ -26,9 +28,11 @@ def make_session(command):
         sessions[command[0]] = requests.Session()
         print('[Result] Success.')
 
+
 @command_func
 def session(command):
     print(*list(sessions.keys()), sep='\n')
+
 
 @command_func
 def login(command):
@@ -37,7 +41,9 @@ def login(command):
     elif command[0] not in sessions:
         print('[Error] Invalid session.')
     else:
-        print('[Result] ' + sessions[command[0]].post(host + 'login', {'player_name':command[1]}).text)
+        print('[Result] ' + sessions[command[0]].post(host +
+                                                      'login', {'player_name': command[1]}).text)
+
 
 @command_func
 def logout(command):
@@ -47,6 +53,7 @@ def logout(command):
         print('[Error] Invalid session.')
     else:
         print('[Result] ' + sessions[command[0]].post(host + 'logout').text)
+
 
 while True:
     command = str(input())
