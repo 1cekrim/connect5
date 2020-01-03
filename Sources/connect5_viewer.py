@@ -8,14 +8,14 @@ from OpenGL.GLU import *
 class Connect5Viewer:
     def __init__(self, name: str, size: int, block_size: int, padding: int):
         self.name = name
-        self.size = size
+        self.size = size - 1
 
         self.padding = padding
         self.block_size = block_size
         self.stone_size = 0.4 * block_size
         self.stone_vertex_size = 360
-        self.origin_ortho_width = padding + (size * block_size) / 2
-        self.origin_ortho_height = padding + (size * block_size) / 2
+        self.origin_ortho_width = padding + (self.size * block_size) / 2
+        self.origin_ortho_height = padding + (self.size * block_size) / 2
 
         self.left_bottom_y = -self.origin_ortho_height + padding
         self.left_bottom_x = -self.origin_ortho_width + padding
