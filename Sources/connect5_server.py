@@ -2,13 +2,27 @@ import os
 import string
 import random
 import numpy as np
+import logging
 
 from functools import wraps, reduce
 from flask import Flask, request, current_app, session, escape, jsonify
 
-app = Flask(__name__)
 ADMIN_PASSWORD = 'rla92233'
 GRID_SIZE = 15
+HOST = '127.0.0.1'
+PORT = 12345
+IS_DEBUG = True
+
+app = Flask(__name__)
+app.logger.setLevel(logging.DEBUG if IS_DEBUG else logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+
+app.logger.removeHandler(app.logger.handlers[0])
+app.logger.addHandler(stream_handler)
 
 
 class Player:
@@ -44,7 +58,8 @@ class Game:
         state = {}
         state['grid'] = self.grid.tolist()
         state['color'] = 'black' if player_name == self.black_player.player_name else 'white'
-        state['opponent_action'] = self.history[-1] if len(self.history) > 0 else None
+        state['opponent_action'] = self.history[-1] if len(
+            self.history) > 0 else None
 
         return state
 
@@ -126,7 +141,7 @@ def check_game_started(func):
     return wrapper
 
 
-def logger(func):
+def logger_decorator(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         print(f'[{func.__name__} Start]')
@@ -137,7 +152,7 @@ def logger(func):
 
 
 @app.route('/login', methods=['POST'])
-@logger
+@logger_decorator
 def login():
     if 'player_name' in session:
         return f'Please logout first. {escape(session["player_name"])}', 409
@@ -152,7 +167,7 @@ def login():
 
 @app.route('/logout', methods=['POST'])
 @check_login
-@logger
+@logger_decorator
 def logout():
     player_name = session['player_name']
     session.pop('player_name', None)
@@ -164,7 +179,7 @@ def logout():
 
 @app.route('/remove_player', methods=['POST'])
 @check_admin
-@logger
+@logger_decorator
 def remove_player():
     player_name = request.form['player_name']
     if not player_name in current_app.players:
@@ -174,14 +189,14 @@ def remove_player():
 
 
 @app.route('/player', methods=['GET'])
-@logger
+@logger_decorator
 def player():
     return jsonify(list(current_app.players.keys())), 200
 
 
 @app.route('/make_match', methods=['POST'])
 @check_admin
-@logger
+@logger_decorator
 def make_match():
     if not ('black' in request.form and 'white' in request.form and request.form['black'] in current_app.players and request.form['white'] in current_app.players):
         return 'Invalid player.', 400
@@ -212,7 +227,7 @@ def make_match():
 @app.route('/state', methods=['GET'])
 @check_login
 @check_game_started
-@logger
+@logger_decorator
 def state():
     player = current_app.players[session['player_name']]
     try:
@@ -225,7 +240,7 @@ def state():
 
 @app.route('/action', methods=['POST'])
 @check_login
-@logger
+@logger_decorator
 def action():
     if 'y' not in request.form or 'x' not in request.form:
         return 'Bad Request.', 400
@@ -244,7 +259,7 @@ def action():
 
 
 @app.route('/match', methods=['GET'])
-@logger
+@logger_decorator
 def match():
     result = {}
     for game in current_app.games.values():
@@ -254,7 +269,7 @@ def match():
 
 @app.route('/find_history', methods=['POST'])
 @check_admin
-@logger
+@logger_decorator
 def find_history():
     if 'game_name' not in request.form:
         return 'Bad Request.', 400
@@ -268,7 +283,7 @@ def find_history():
 @app.route('/history', methods=['GET'])
 @check_login
 @check_game_started
-@logger
+@logger_decorator
 def history():
     return jsonify(current_app.players[session['player_name']].game.get_history()), 200
 
@@ -277,7 +292,9 @@ def init_app():
     app.secret_key = os.urandom(12)
     app.players = {}
     app.games = {}
-    app.run(host='127.0.0.1', debug=True, port=12345)
+    app.logger.info(f'Server start. Host: {HOST} | Port: {PORT} | debug: {IS_DEBUG}')
+    app.logger.info(f'secret_key: {app.secret_key}')
+    app.run(host=HOST, debug=IS_DEBUG, port=PORT)
 
 
 if __name__ == '__main__':
