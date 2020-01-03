@@ -11,10 +11,12 @@ ADMIN_PASSWORD = 'rla92233'
 GRID_SIZE = 15
 HOST = '127.0.0.1'
 PORT = 12345
-IS_DEBUG = True
+IS_DEBUG = False
 
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG if IS_DEBUG else logging.INFO)
+
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 
@@ -110,16 +112,24 @@ def random_name(length, lst):
             return result
 
 
+def only_when_change_logger(caller: str, message: str, state: int):
+    if caller in session and session[caller] == state:
+        return
+    current_app.logger.info(f'{caller}: {message}')
+    session[caller] = state
+
+
 def check_login(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not 'player_name' in session:
-            current_app.logger.info('check_login: Please login first.')
+            only_when_change_logger('check_login', 'Please login first.', 0)
             return 'Please login first.', 401
         if not session['player_name'] in current_app.players:
-            current_app.logger.info('check_login: Session has expired.')
+            only_when_change_logger('check_login', 'Session has expired.', 1)
             return 'Session has expired.', 401
-        current_app.logger.info(f'check_login: {session["player_name"]} is logged in.')
+        only_when_change_logger(
+            'check_login',  f'{session["player_name"]} is logged in.', 2)
         return func(*args, **kwargs)
     return wrapper
 
@@ -128,12 +138,12 @@ def check_admin(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not 'admin_password' in request.form:
-            current_app.logger.info('check_admin: Bad Request.')
+            only_when_change_logger('check_admin', 'Bad Request.', 0)
             return 'Bad Request.', 400
         if request.form['admin_password'] != ADMIN_PASSWORD:
-            current_app.logger.info('check_admin: Acess denied.')
+            only_when_change_logger('check_admin', 'Access denied.', 1)
             return 'Access denied.', 403
-        current_app.logger.info('check_admin: Verified.')
+        only_when_change_logger('check_admin', 'Verified.', 2)
         return func(*args, **kwargs)
     return wrapper
 
@@ -143,9 +153,11 @@ def check_game_started(func):
     def wrapper(*args, **kwargs):
         player = current_app.players[session['player_name']]
         if not player.valid_game:
-            current_app.logger.info(f'check_game_started: {session["player_name"]} is not included in any match.')
+            only_when_change_logger(
+                'check_game_started', f'{session["player_name"]} is not included in any match.', 0)
             return 'Game did not start.', 409
-        current_app.logger.info(f'check_game_started: {player.player_name} is included in {player.game.game_name}')
+        only_when_change_logger(
+            'check_game_started', f'{player.player_name} is included in {player.game.game_name}', 1)
         return func(*args, **kwargs)
     return wrapper
 
@@ -181,10 +193,11 @@ def login():
 @logger_decorator
 def logout():
     player_name = session['player_name']
-    session.pop('player_name', None)
+    # session.pop('player_name', None)
     if not player_name in current_app.players:
         return 'You are already logged out.', 409
     del current_app.players[player_name]
+    session.clear()
     return f'Good bye. {player_name}', 200
 
 
