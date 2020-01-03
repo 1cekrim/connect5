@@ -141,8 +141,11 @@ def check_admin(func):
 def check_game_started(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not current_app.players[session['player_name']].valid_game:
+        player = current_app.players[session['player_name']]
+        if not player.valid_game:
+            current_app.logger.info(f'check_game_started: {session["player_name"]} is not included in any match.')
             return 'Game did not start.', 409
+        current_app.logger.info(f'check_game_started: {player.player_name} is included in {player.game.game_name}')
         return func(*args, **kwargs)
     return wrapper
 
