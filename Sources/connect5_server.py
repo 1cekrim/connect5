@@ -98,7 +98,7 @@ class Game:
             raise InvalidTurnException
 
     def _check_pos(self, player_name: str, pos_y: int, pos_x: int):
-        if self.grid[pos_y][pos_x] != 0 or pos_y < 0 or pos_x < 0 or pos_y >= self.column_size or pos_x >= self.row_size:
+        if pos_y < 0 or pos_x < 0 or pos_y >= self.column_size or pos_x >= self.row_size or self.grid[pos_y][pos_x] != 0 :
             raise InvalidActionException
 
 
