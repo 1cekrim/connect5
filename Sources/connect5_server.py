@@ -119,7 +119,7 @@ def check_login(func):
         if not session['player_name'] in current_app.players:
             current_app.logger.info('check_login: Session has expired.')
             return 'Session has expired.', 401
-        current_app.logger.info(f'{session["player_name"]} is logged in.')
+        current_app.logger.info(f'check_login: {session["player_name"]} is logged in.')
         return func(*args, **kwargs)
     return wrapper
 
