@@ -42,9 +42,9 @@ class Game:
         self._check_turn(player_name)
 
         state = {}
-        state['column_size'] = self.column_size
-        state['row_size'] = self.row_size
         state['grid'] = self.grid.tolist()
+        state['color'] = 'black' if player_name == self.black_player.player_name else 'white'
+        state['opponent_action'] = self.history[-1] if len(self.history) > 0 else None
 
         return state
 
