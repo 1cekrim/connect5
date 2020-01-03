@@ -128,9 +128,12 @@ def check_admin(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not 'admin_password' in request.form:
+            current_app.logger.info('check_admin: Bad Request.')
             return 'Bad Request.', 400
         if request.form['admin_password'] != ADMIN_PASSWORD:
+            current_app.logger.info('check_admin: Acess denied.')
             return 'Access denied.', 403
+        current_app.logger.info('check_admin: Verified.')
         return func(*args, **kwargs)
     return wrapper
 
