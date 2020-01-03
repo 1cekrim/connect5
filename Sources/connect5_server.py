@@ -156,7 +156,8 @@ def logger_decorator(func):
 def login():
     if 'player_name' in session:
         player_name = escape(session["player_name"])
-        current_app.logger.info(f'{player_name} failed to log in successfully.')
+        current_app.logger.info(
+            f'{player_name} failed to log in successfully.')
         return f'Please logout first. {player_name}', 409
     player_name = request.form['player_name']
 
@@ -293,7 +294,8 @@ def init_app():
     app.secret_key = os.urandom(12)
     app.players = {}
     app.games = {}
-    app.logger.info(f'Server start. Host: {HOST} | Port: {PORT} | debug: {IS_DEBUG}')
+    app.logger.info(
+        f'Server start. Host: {HOST} | Port: {PORT} | debug: {IS_DEBUG}')
     app.logger.info(f'secret_key: {app.secret_key}')
     app.run(host=HOST, debug=IS_DEBUG, port=PORT)
 
