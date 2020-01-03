@@ -114,9 +114,12 @@ def check_login(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not 'player_name' in session:
-            return 'Please login first', 401
+            current_app.logger.info('check_login: Please login first.')
+            return 'Please login first.', 401
         if not session['player_name'] in current_app.players:
+            current_app.logger.info('check_login: Session has expired.')
             return 'Session has expired.', 401
+        current_app.logger.info(f'{session["player_name"]} is logged in.')
         return func(*args, **kwargs)
     return wrapper
 
