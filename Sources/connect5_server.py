@@ -144,9 +144,9 @@ def check_game_started(func):
 def logger_decorator(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print(f'[{func.__name__} Start]')
+        current_app.logger.debug(f'{func.__name__} Start')
         result = func(*args, **kwargs)
-        print(f'[{func.__name__} End]')
+        current_app.logger.debug(f'{func.__name__} End')
         return result
     return wrapper
 
@@ -155,13 +155,14 @@ def logger_decorator(func):
 @logger_decorator
 def login():
     if 'player_name' in session:
-        return f'Please logout first. {escape(session["player_name"])}', 409
+        player_name = escape(session["player_name"])
+        current_app.logger.info(f'{player_name} failed to log in successfully.')
+        return f'Please logout first. {player_name}', 409
     player_name = request.form['player_name']
-    if player_name in current_app.players:
-        return f'{player_name} is in conflict.', 409
 
     session['player_name'] = player_name
     current_app.players[player_name] = Player(player_name)
+    current_app.logger.info(f'{player_name} logged in successfully.')
     return f'Hello. {player_name}', 200
 
 
