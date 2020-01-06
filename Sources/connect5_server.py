@@ -193,11 +193,12 @@ def login():
 @logger_decorator
 def logout():
     player_name = session['player_name']
-    # session.pop('player_name', None)
-    if not player_name in current_app.players:
+    if player_name not in current_app.players:
+        current_app.logger.info(f'{player_name} already logged out.')
         return 'You are already logged out.', 409
     del current_app.players[player_name]
     session.clear()
+    current_app.logger.info(f'{player_name} logged out successfully.')
     return f'Good bye. {player_name}', 200
 
 
