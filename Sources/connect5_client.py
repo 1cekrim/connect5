@@ -1,5 +1,6 @@
 import requests
 import connect5_viewer
+import time
 
 from functools import wraps
 
@@ -170,6 +171,7 @@ def connect(command):
             print("Can't find history")
             return
         viewer.update_history(rep.json())
+        time.sleep(1)
 
     viewer.show(main_loop)
 
