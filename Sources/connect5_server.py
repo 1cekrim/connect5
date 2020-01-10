@@ -3,6 +3,7 @@ import string
 import random
 import numpy as np
 import logging
+import time
 
 from functools import wraps, reduce
 from flask import Flask, request, current_app, session, escape, jsonify
@@ -43,6 +44,10 @@ class InvalidActionException(Exception):
     pass
 
 
+class TimeLimitExceededException(Exception):
+    pass
+
+
 class Game:
     def __init__(self, config: dict):
         self.config = config
@@ -50,6 +55,8 @@ class Game:
         self.row_size = self.config['size']
         self.black_player = self.config['black']
         self.white_player = self.config['white']
+        self.black_player_first_get_state_time = None
+        self.white_player_first_get_state_time = None
         self.game_name = self.config['name']
         self.current_player = self.black_player
         self.grid = np.zeros((self.column_size, self.row_size), dtype='int64')
@@ -72,6 +79,11 @@ class Game:
         state['opponent_action'] = self.history[-1] if len(
             self.history) > 0 else None
 
+        if player_name == self.black_player.player_name and self.black_player_first_get_state_time == None:
+            self.black_player_first_get_state_time = time.time()
+        elif player_name == self.white_player.player_name and self.white_player_first_get_state_time == None:
+            self.white_player_first_get_state_time = time.time()
+
         return state
 
     def serialize(self):
@@ -92,6 +104,14 @@ class Game:
         if self.is_end:
             current_app.logger.error('do_action called in ended match')
             return
+
+        now_time = time.time()
+        if player_name == self.black_player.player_name:
+            if self.black_player_first_get_state_time != None and now_time - self.black_player_first_get_state_time > TIME_LIMIT:
+                raise TimeLimitExceededException
+        elif player_name == self.white_name.player_name:
+            if self.white_player_first_get_state_time != None and now_time - self.white_player_first_get_state_time > TIME_LIMIT:
+                raise TimeLimitExceededException
 
         self._check_turn(player_name)
         self._check_pos(player_name, pos_y, pos_x)
@@ -143,6 +163,10 @@ class Game:
         self.white_player.game = None
         self.winner = winner_player_name
         self.is_end = True
+
+    def close_force(self, loser: str):
+        self.close(self.black_player.player_name if self.black_player.player_name !=
+                   loser else self.white_player.player_name)
 
     def get_history(self):
         return self.history
@@ -348,6 +372,10 @@ def action():
         return "Invalid Action", 409
     except InvalidTurnException:
         return 'Not your turn.', 403
+    except TimeLimitExceededException:
+        current_app.logger.error(f'{player.player_name} time limit.')
+        player.game.close_force(player.player_name)
+        return "Time Limit!!!", 403
     else:
         return jsonify(result), 200
 
