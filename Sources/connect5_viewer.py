@@ -20,8 +20,8 @@ class Connect5Viewer:
         self.left_bottom_y = -self.origin_ortho_height + padding
         self.left_bottom_x = -self.origin_ortho_width + padding
 
-        self.origin_window_width = 500
-        self.origin_window_height = 500
+        self.origin_window_width = 1000
+        self.origin_window_height = 1000
 
         self.loop_flag = True
 
@@ -74,7 +74,7 @@ class Connect5Viewer:
                 glVertex3f(self.left_bottom_x + x, self.left_bottom_y + y, 0)
                 glEnd()
 
-        for hist in self.history:
+        for idx, hist in enumerate(self.history):
             if hist['color'] == "black":
                 glColor3f(0, 0, 0)
             elif hist['color'] == "white":
@@ -85,12 +85,33 @@ class Connect5Viewer:
 
             glBegin(GL_POLYGON)
 
+            center_x = self.left_bottom_x + \
+                int(hist['x']) * self.block_size + \
+                self.padding - self.block_size / 2
+            center_y = self.left_bottom_y + \
+                int(hist['y']) * self.block_size + \
+                self.padding - self.block_size / 2
+
             for vertex in range(self.stone_vertex_size):
-                rad = 2 * math.pi * vertex / self.stone_vertex_size
-                glVertex3f(self.left_bottom_x + int(hist['x']) * self.block_size + self.padding + self.stone_size *
-                           math.cos(rad) - self.block_size / 2, self.left_bottom_y + int(hist['y']) * self.block_size + self.padding + self.stone_size * math.sin(rad) - self.block_size / 2, 0)
+                rad = 2 * math.pi * vertex / self.stone_vertex_size - self.block_size / 2
+                glVertex3f(self.stone_size * math.cos(rad) + center_x,
+                           self.stone_size * math.sin(rad) + center_y, 0)
 
             glEnd()
+
+            s = str(idx)
+            if hist['color'] == 'black':
+                glColor3f(1., 1., 1.)
+            else:
+                glColor3f(0., 0., 0.)
+            glPushMatrix()
+            glRasterPos(center_x - self.stone_size / 4,
+                        center_y - self.stone_size / 4)
+            for ch in s:
+                glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,
+                                    ctypes.c_int(ord(ch)))
+
+            glPopMatrix()
 
         glFlush()
 
