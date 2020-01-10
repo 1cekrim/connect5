@@ -21,9 +21,19 @@ class Connect5Connecter:
         while True:
             rep = self.sess.get(self.url + 'state')
             if Connect5Connecter.is_success(rep):
-                return rep.json()
+                state = rep.json()
+                if state['opponent_action'] != None:
+                    state['opponent_action']['x'] += 1
+                    state['opponent_action']['y'] += 1
+                return state
             time.sleep(delay)
 
     def send_action(self, column: int, row: int):
-        assert self.sess.post(self.url + 'action',
-                              {'x': column - 1, 'y': row - 1})
+        assert Connect5Connecter.is_success(self.sess.post(self.url + 'action',
+                                                           {'x': column - 1, 'y': row - 1}))
+
+    def notice_winner(self, winner):
+        rep = self.sess.post(
+            self.url + 'notice_winner', {'player_name': self.name, 'winner': winner})
+        print(rep.text)
+        assert Connect5Connecter.is_success(rep)
