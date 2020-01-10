@@ -388,8 +388,8 @@ def init_app():
     app.logger.info(
         f'Server start. Host: {HOST} | Port: {PORT} | debug: {IS_DEBUG}')
     app.logger.info(f'secret_key: {app.secret_key}')
-    app.run(host=HOST, debug=IS_DEBUG, port=PORT)
 
 
+init_app()
 if __name__ == '__main__':
-    init_app()
+    app.run(host=HOST, debug=IS_DEBUG, port=PORT)
