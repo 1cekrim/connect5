@@ -9,8 +9,8 @@ from flask import Flask, request, current_app, session, escape, jsonify
 
 ADMIN_PASSWORD = 'rla92233'
 GRID_SIZE = 6
-HOST = '127.0.0.1'
-PORT = 12345
+HOST = 'localhost'
+PORT = 5000
 IS_DEBUG = False
 
 app = Flask(__name__)
