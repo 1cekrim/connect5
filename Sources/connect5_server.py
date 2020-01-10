@@ -8,7 +8,7 @@ from functools import wraps, reduce
 from flask import Flask, request, current_app, session, escape, jsonify
 
 ADMIN_PASSWORD = 'rla92233'
-GRID_SIZE = 15
+GRID_SIZE = 6
 HOST = '127.0.0.1'
 PORT = 12345
 IS_DEBUG = False
@@ -53,8 +53,16 @@ class Game:
         self.current_player = self.black_player
         self.grid = np.zeros((self.column_size, self.row_size), dtype='int64')
         self.history = []
+        self.winner_black_player = None
+        self.winner_white_Player = None
+        self.winner = None
+        self.is_end = False
 
     def get_state(self, player_name: str):
+        if self.is_end:
+            current_app.logger.error('get_state called in ended match')
+            return None
+
         self._check_turn(player_name)
 
         state = {}
@@ -74,10 +82,16 @@ class Game:
         state['game_name'] = self.game_name
         state['current_player_name'] = self.current_player.player_name
         state['grid'] = self.grid.tolist()
+        state['winner'] = self.winner
+        state['is_end'] = self.is_end
 
         return state
 
     def do_action(self, player_name: str, pos_y: int, pos_x: int):
+        if self.is_end:
+            current_app.logger.error('do_action called in ended match')
+            return
+
         self._check_turn(player_name)
         self._check_pos(player_name, pos_y, pos_x)
 
@@ -89,6 +103,45 @@ class Game:
                              'color': 'black' if is_black else 'white', 'x': pos_x, 'y': pos_y})
 
         self.current_player = self.white_player if is_black else self.black_player
+
+    def notice_winner(self, player_name: str, winner: str):
+        if self.is_end:
+            current_app.logger.error('notice_winner called in ended match')
+            return
+        if player_name == self.black_player.player_name:
+            if self.winner_black_player is not None:
+                current_app.logger.error(
+                    f'{player_name} winner_black_player is not None')
+                return
+            self.winner_black_player = winner
+        else:
+            if self.winner_white_Player is not None:
+                current_app.logger.error(
+                    f'{player_name} winner_white_player is not None')
+                return
+            self.winner_white_Player = winner
+
+        if not (self.winner_white_Player is None or self.winner_black_player is None):
+            if self.winner_white_Player != self.winner_black_player:
+                current_app.logger.error(
+                    f'winner not equal. {self.black_player.player_name}: {self.winner_black_player}, {self.white_player.player_name}: {self.winner_white_Player}')
+                return
+            if self.winner_black_player == "Draw":
+                self.close("Draw")
+                return
+            self.close(self.black_player.player_name if self.winner_black_player ==
+                       "Black" else self.white_player.player_name)
+
+    def close(self, winner_player_name: str):
+        if self.is_end:
+            current_app.logger.error('close called in ended match')
+            return
+        self.black_player.valid_game = False
+        self.black_player.game = None
+        self.white_player.valid_game = False
+        self.white_player.game = None
+        self.winner = winner_player_name
+        self.is_end = True
 
     def get_history(self):
         return self.history
@@ -249,6 +302,19 @@ def make_match():
     black_player.valid_game = True
     white_player.valid_game = True
     return f'Success. Game name: {config["name"]}'
+
+
+@app.route('/notice_winner', methods=['POST'])
+@check_login
+@check_game_started
+@logger_decorator
+def winner():
+    if 'winner' not in request.form:
+        return 'Bad Request.', 400
+
+    player = current_app.players[session['player_name']]
+    player.game.notice_winner(player.player_name, request.form['winner'])
+    return f'Success. {player}: {winner}'
 
 
 @app.route('/state', methods=['GET'])
