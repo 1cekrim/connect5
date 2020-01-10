@@ -1,11 +1,10 @@
 import requests
-import connect5_viewer
 import time
 import json
 
 from functools import wraps
 
-host = 'http://127.0.0.1:12345/'
+host = 'http://52.14.81.198:5000/'
 ADMIN_PASSWORD = 'rla92233'
 
 command_functions = {}
@@ -22,6 +21,7 @@ def print_response(rep):
     else:
         valid = '[Error] '
     print(valid + rep.text)
+
 
 def print_json_response(rep):
     if is_success(rep):
@@ -143,7 +143,7 @@ def find_history(command):
 def connect(command):
     if len(command) != 1:
         print('connect [match name]')
-
+    import connect5_viewer
     form = {}
     form['admin_password'] = ADMIN_PASSWORD
     form['game_name'] = command[0]
