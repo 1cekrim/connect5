@@ -98,7 +98,7 @@ class Game:
             raise InvalidTurnException
 
     def _check_pos(self, player_name: str, pos_y: int, pos_x: int):
-        if pos_y < 0 or pos_x < 0 or pos_y >= self.column_size or pos_x >= self.row_size or self.grid[pos_y][pos_x] != 0 :
+        if pos_y < 0 or pos_x < 0 or pos_y >= self.column_size or pos_x >= self.row_size or self.grid[pos_y][pos_x] != 0:
             raise InvalidActionException
 
 
@@ -183,8 +183,10 @@ def login():
     player_name = request.form['player_name']
 
     session['player_name'] = player_name
-    current_app.players[player_name] = Player(player_name)
     current_app.logger.info(f'{player_name} logged in successfully.')
+    if player_name not in current_app.players:
+        current_app.players[player_name] = Player(player_name)
+        current_app.logger.info(f'{player_name} sign in.')
     return f'Hello. {player_name}', 200
 
 
