@@ -4,7 +4,7 @@ import json
 
 from functools import wraps
 
-host = 'http://52.14.81.198:5000/'
+host = 'http://3.133.86.107:80/'
 ADMIN_PASSWORD = 'rla92233'
 
 command_functions = {}
