@@ -8,7 +8,8 @@ from functools import wraps, reduce
 from flask import Flask, request, current_app, session, escape, jsonify
 
 ADMIN_PASSWORD = 'rla92233'
-GRID_SIZE = 6
+GRID_SIZE = 7
+TIME_LIMIT = 15
 HOST = 'localhost'
 PORT = 5000
 IS_DEBUG = False
