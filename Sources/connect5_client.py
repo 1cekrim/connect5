@@ -1,6 +1,7 @@
 import requests
 import connect5_viewer
 import time
+import json
 
 from functools import wraps
 
@@ -8,6 +9,7 @@ host = 'http://127.0.0.1:12345/'
 ADMIN_PASSWORD = 'rla92233'
 
 command_functions = {}
+admin_sess = requests.Session()
 
 
 def is_success(rep):
@@ -20,6 +22,13 @@ def print_response(rep):
     else:
         valid = '[Error] '
     print(valid + rep.text)
+
+def print_json_response(rep):
+    if is_success(rep):
+        parsed = json.loads(rep.text)
+        print(json.dumps(parsed, indent=4, sort_keys=True))
+    else:
+        print('[Error]')
 
 
 def command_func(func):
@@ -77,7 +86,7 @@ def state(command):
     elif command[0] not in sessions:
         print('[Error] Invalid session.')
     else:
-        print_response(sessions[command[0]].get(host + 'state'))
+        print_json_response(sessions[command[0]].get(host + 'state'))
 
 
 @command_func
@@ -89,7 +98,7 @@ def make_match(command):
         form['admin_password'] = ADMIN_PASSWORD
         form['black'] = command[0]
         form['white'] = command[1]
-        print_response(requests.post(host + 'make_match', form))
+        print_response(admin_sess.post(host + 'make_match', form))
 
 
 @command_func
@@ -108,7 +117,7 @@ def match(command):
     if len(command) != 0:
         print('match')
     else:
-        print_response(requests.get(host + 'match'))
+        print_json_response(admin_sess.get(host + 'match'))
 
 
 @command_func
@@ -116,7 +125,7 @@ def history(command):
     if len(command) != 1:
         print('history [session name]')
     else:
-        print_response(sessions[command[0]].get(host + 'history'))
+        print_json_response(sessions[command[0]].get(host + 'history'))
 
 
 @command_func
@@ -127,7 +136,7 @@ def find_history(command):
         form = {}
         form['admin_password'] = ADMIN_PASSWORD
         form['game_name'] = command[0]
-        print_response(requests.post(host + 'find_history', form))
+        print_json_response(admin_sess.post(host + 'find_history', form))
 
 
 @command_func
@@ -139,7 +148,7 @@ def connect(command):
     form['admin_password'] = ADMIN_PASSWORD
     form['game_name'] = command[0]
 
-    match_rep = requests.get(host + 'match')
+    match_rep = admin_sess.get(host + 'match')
     if not is_success(match_rep):
         print('Invalid?')
 
@@ -166,7 +175,7 @@ def connect(command):
         current_match['game_name'], size, 10, 5)
 
     def main_loop():
-        rep = requests.post(host + 'find_history', form)
+        rep = admin_sess.post(host + 'find_history', form)
         if not is_success(rep):
             print("Can't find history")
             return
@@ -174,6 +183,17 @@ def connect(command):
         time.sleep(1)
 
     viewer.show(main_loop)
+
+
+@command_func
+def player(command):
+    if len(command) != 0:
+        print('player')
+
+    player = admin_sess.get(host + 'player')
+    if not is_success(player):
+        print('Invalid?')
+    print_json_response(player)
 
 
 while True:
