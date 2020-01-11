@@ -1,14 +1,17 @@
 import requests
 import time
 import json
+import multiprocessing as mp
 
 from functools import wraps
 
-host = 'http://52.14.81.198:5000/'
+host = 'http://3.133.86.107:80/'
 ADMIN_PASSWORD = 'rla92233'
 
 command_functions = {}
 admin_sess = requests.Session()
+
+mp.set_start_method('fork', force=True)
 
 
 def is_success(rep):
@@ -128,22 +131,28 @@ def history(command):
         print_json_response(sessions[command[0]].get(host + 'history'))
 
 
-@command_func
-def find_history(command):
-    if len(command) != 1:
-        print('history [match name]')
-    else:
-        form = {}
-        form['admin_password'] = ADMIN_PASSWORD
-        form['game_name'] = command[0]
-        print_json_response(admin_sess.post(host + 'find_history', form))
+def connect_inter(current_match, form):
+    import connect5_viewer
+    size = int(current_match['column_size'])
+    viewer = connect5_viewer.Connect5Viewer(
+        current_match['game_name'], size, 10, 5)
+
+    def main_loop():
+        rep = admin_sess.post(host + 'find_history', form)
+        if not is_success(rep):
+            print("Can't find history")
+            return
+        viewer.update_history(rep.json())
+        time.sleep(1)
+
+    viewer.show(main_loop)
 
 
 @command_func
 def connect(command):
     if len(command) != 1:
         print('connect [match name]')
-    import connect5_viewer
+
     form = {}
     form['admin_password'] = ADMIN_PASSWORD
     form['game_name'] = command[0]
@@ -164,25 +173,14 @@ def connect(command):
     if current_match['column_size'] != current_match['row_size']:
         print('column_size not equal row_size.')
 
-    size = int(current_match['column_size'])
-
     print('[Info] Success.')
     print(f"Game name: {current_match['game_name']}")
     print(f"Black: {current_match['black_player_name']}")
     print(f"White: {current_match['white_player_name']}")
 
-    viewer = connect5_viewer.Connect5Viewer(
-        current_match['game_name'], size, 10, 5)
-
-    def main_loop():
-        rep = admin_sess.post(host + 'find_history', form)
-        if not is_success(rep):
-            print("Can't find history")
-            return
-        viewer.update_history(rep.json())
-        time.sleep(1)
-
-    viewer.show(main_loop)
+    p = mp.Process(target=connect_inter, args=(current_match, form))
+    p.daemon = True
+    p.start()
 
 
 @command_func
