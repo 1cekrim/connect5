@@ -194,6 +194,22 @@ def player(command):
     print_json_response(player)
 
 
+@command_func
+def remove_match(command):
+    if len(command) != 1:
+        print('remove_match [match name]')
+
+    form = {}
+    form = {}
+    form['admin_password'] = ADMIN_PASSWORD
+    form['match_name'] = command[0]
+
+    rep = admin_sess.post(host + 'remove_match', form)
+    if not is_success(rep):
+            print("Can't find match")
+            return
+
+
 while True:
     command = str(input())
     if command == 'exit':
