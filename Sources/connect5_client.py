@@ -5,7 +5,7 @@ import multiprocessing as mp
 
 from functools import wraps
 
-host = 'http://3.133.86.107:80/'
+host = 'http://18.189.17.31:80/'
 ADMIN_PASSWORD = 'rla92233'
 
 command_functions = {}
