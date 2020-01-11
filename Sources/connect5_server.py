@@ -268,6 +268,18 @@ def remove_player():
     return 'Success.', 200
 
 
+@app.route('/remove_match', methods=['POST'])
+@check_admin
+@logger_decorator
+def remove_match():
+    match_name = request.form['match_name']
+    if not match_name in current_app.games:
+        return f'{match_name} does not exist.', 409
+    current_app.games[match_name].close("NONE")
+    del current_app.games[match_name]
+    return 'Success.', 200
+
+
 @app.route('/player', methods=['GET'])
 @logger_decorator
 def player():
