@@ -109,9 +109,11 @@ class Game:
         if player_name == self.black_player.player_name:
             if self.black_player_first_get_state_time != None and now_time - self.black_player_first_get_state_time > TIME_LIMIT:
                 raise TimeLimitExceededException
-        elif player_name == self.white_name.player_name:
+            self.black_player_first_get_state_time = None
+        elif player_name == self.white_player.player_name:
             if self.white_player_first_get_state_time != None and now_time - self.white_player_first_get_state_time > TIME_LIMIT:
                 raise TimeLimitExceededException
+            self.white_player_first_get_state_time = None
 
         self._check_turn(player_name)
         self._check_pos(player_name, pos_y, pos_x)
@@ -163,6 +165,7 @@ class Game:
         self.white_player.game = None
         self.winner = winner_player_name
         self.is_end = True
+        current_app.logger.info(f'[{self.game_name}] closed. Winner: {self.winner}')
 
     def close_force(self, loser: str):
         self.close(self.black_player.player_name if self.black_player.player_name !=
